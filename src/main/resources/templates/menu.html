@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Menu</title>
+</head>
+<body>
+    <div>
+        <div>
+            <form action="addUser" method="get">
+                <input type="submit" value="Create User">
+            </form>
+        </div>
+        <div th:each="user:${users}">
+            <form action="choice" method="get">
+                <div>
+                    <input id="username" name="username" th:value="${user.username}">
+                    <label for="changePass">Change Password</label>
+                    <input id="changePass" name="changePass" type="checkbox">
+                    <input id="password" name="password" type="password">
+                    <label for="enabled">Enabled</label>
+                    <input id="enabled" name="enabled" th:checked="${user.enabled}" type="checkbox">
+                    <label for="admin">Admin</label>
+                    <input id="admin" name="admin" th:checked="${user.admin}" type="checkbox">
+                    <input type="submit" name="action" value="edit">
+                    <input type="submit" name="action" value="delete">
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
