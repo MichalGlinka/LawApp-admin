@@ -1,7 +1,9 @@
 package com.example.lawappadmin.service;
 
+import com.example.lawappadmin.controller.LoginController;
 import com.example.lawappadmin.model.User;
 import org.springframework.stereotype.Service;
+import org.springframework.ui.Model;
 
 import java.lang.reflect.Array;
 import java.net.URI;
@@ -52,5 +54,20 @@ public class Communication {
             users.add(new User(contents[i],true));
         }
         return users;
+    }
+
+    public boolean authorize(String username, String password, Model model){
+        String [] params = {String.format(LoginController.USER + "%s",username), String.format(LoginController.PASS + "%s",password)};
+        String response = sendRequest("auth",params);
+        boolean authenticated = getAutentication(response);
+        String resp = sendRequest("read",new String[]{params[0]});
+        User user = new User(resp,false);
+        if (authenticated && user.isAdmin()){
+            ArrayList<User> users = getUserList(sendRequest("readAll",null));
+            model.addAttribute("users",users);
+            return true;
+        }else{
+            return false;
+        }
     }
 }

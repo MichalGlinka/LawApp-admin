@@ -2,7 +2,6 @@ package com.example.lawappadmin.controller;
 
 import com.example.lawappadmin.model.User;
 import com.example.lawappadmin.service.Communication;
-import org.apache.logging.log4j.message.StringFormattedMessage;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,6 +11,11 @@ import java.util.ArrayList;
 
 @Controller
 public class LoginController {
+
+    public static final String USER = "username=";
+    public static final String PASS = "password=";
+    public static final String ENAB = "enabled=";
+    public static final String ADMI = "admin=";
     Communication communication;
 
     public LoginController(Communication communication) {
@@ -20,14 +24,8 @@ public class LoginController {
 
     @GetMapping("/login")
     public String login(@RequestParam String username, @RequestParam String password, Model model){
-        String [] params = {String.format("username=%s",username), String.format("password=%s",password)};
-        String response = communication.sendRequest("auth",params);
-        boolean authenticated = communication.getAutentication(response);
-        String resp = communication.sendRequest("read",new String[]{params[0]});
-        User user = new User(resp,false);
-        if (authenticated && user.isAdmin()){
-            ArrayList<User> users = communication.getUserList(communication.sendRequest("readAll",null));
-            model.addAttribute("users",users);
+        boolean authorize = communication.authorize(username,password,model);
+        if (authorize){
             return "menu.html";
         }else{
             return "index.html";
@@ -35,11 +33,11 @@ public class LoginController {
     }
 
     @GetMapping("/choice")
-    public String edit(@RequestParam String username, @RequestParam String password,
-                       @RequestParam boolean enabled, @RequestParam boolean admin, @RequestParam String action,
+    public String edit(@RequestParam String username, @RequestParam String password, @RequestParam(required = false) boolean changePass,
+                       @RequestParam(required = false) boolean enabled, @RequestParam(required = false) boolean admin, @RequestParam String action,
                        Model model){
         if (action.equals("delete")){
-            communication.sendRequest("delete",new String[]{username});
+            return "sure.html";
         }else{
             String enab = "false";
             String adm = "false";
@@ -49,7 +47,14 @@ public class LoginController {
             if (admin){
                 adm = "true";
             }
-            communication.sendRequest("update",new String[]{username,password,enab,adm});
+
+            User user = new User(communication.sendRequest("read",new String[]{USER + username}),false);
+            String pass = user.getPassword();
+            if (changePass){
+                pass = password;
+            }
+            communication.sendRequest("update",new String[]{USER + username,PASS + pass,
+                    ENAB + enab,ADMI + adm});
         }
         ArrayList<User> users = communication.getUserList(communication.sendRequest("readAll",null));
         model.addAttribute("users",users);
@@ -57,17 +62,18 @@ public class LoginController {
     }
 
     @GetMapping("/add")
-    public String add(@RequestParam String username,@RequestParam String password,@RequestParam boolean enabled,
-                      @RequestParam boolean admin, Model model){
-        String enab = "false";
-        String adm = "false";
+    public String add(@RequestParam String username,@RequestParam String password,@RequestParam(required = false) boolean enabled,
+                      @RequestParam(required = false) boolean admin, Model model){
+        String enab = "0";
+        String adm = "0";
         if (enabled){
-            enab = "true";
+            enab = "1";
         }
         if (admin){
-            adm = "true";
+            adm = "1";
         }
-        communication.sendRequest("add",new String[]{username,password,enab,adm});
+        communication.sendRequest("add",new String[]{USER + username,PASS + password,
+                ENAB + enab,ADMI + adm});
         model.addAttribute("message","User added");
         return "response.html";
     }
@@ -77,5 +83,14 @@ public class LoginController {
         return "addUser.html";
     }
 
-
+    @GetMapping("/ye")
+    public String areYouSure(@RequestParam String username, @RequestParam String password,@RequestParam String action,Model model){
+        if (communication.authorize(username,password,model)){
+            communication.sendRequest("delete",new String[]{USER + username});
+            model.addAttribute("message","User removed");
+            return "response.html";
+        }else {
+            return "menu.html";
+        }
+    }
 }
