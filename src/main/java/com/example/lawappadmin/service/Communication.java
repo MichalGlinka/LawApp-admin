@@ -24,7 +24,7 @@ public class Communication {
 
 
     public String sendRequest(String resource, String [] params) {
-        String urlString = "http://localhost:8080/" + resource;
+        String urlString = "http://dysart.pl:8080/" + resource;
         if (params != null) {
             StringBuilder builder = new StringBuilder();
             builder.append(urlString);
